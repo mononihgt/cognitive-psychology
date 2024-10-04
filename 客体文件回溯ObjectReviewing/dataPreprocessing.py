@@ -63,7 +63,11 @@ class DataPackage:
     def __init__(self, dataFolderName = ''):
         self.dataDir = os.path.join(os.path.abspath('.'), dataFolderName)
 
-    def readData(self, needed_num_row = 0, accuracy_threshold = None, gender_col = '', maxNum = 1000):
+    def readData(self, needed_num_row = 0, accuracy_threshold = None, gender_col = '', maxNum = 1000, calculateAccuracy=None):
+        removeList = RemoveList()
+        encodingList = EncodingList()
+        self.dataMerged = pd.DataFrame()
+
         if maxNum % 2 != 0:
             raise ValueError("maxNum 必须是偶数")
         maxofMale = maxNum // 2
@@ -158,7 +162,7 @@ class DataPackage:
                     print(f"{file} 准确率低于{accuracy_threshold}，已删除")
         print(f"已读取 {numofMale} 名男性数据和 {numofFemale} 名女性数据")
         self.dataMerged = self.dataMerged.dropna(axis=1, how='all')  # 删除全为 NaN 的列
-        self.dataMerged = self.dataMerged.loc[:, ~self.dataMerged.columns.str.contains('Unnamed')]  # 删除列名中包含 "Unnamed" 的列
+        self.dataMerged = self.dataMerged.loc[:, ~self.dataMerged.columns.astype(str).str.contains('Unnamed')]  # 删除列名中包含 "Unnamed" 的列
         print("已删除dataMerged中包含 NaN 值的列和列名中包含 'Unnamed' 的列。")
         return self.dataMerged
 
@@ -168,7 +172,7 @@ class DataGenerate:
             raise TypeError("输入必须是 pandas DataFrame 类型")
         self.dataFrame = dataFrame
 
-    def __call__(self, verticalAxis, horizontalAxis, seperatedLines='', seperatedPlots='', subNameCol=''):
+    def __call__(self, verticalAxis, horizontalAxis, seperatedLines='', seperatedPlots='', subNameCol='',mergedFilePath = ''):
         if not verticalAxis:
             raise ValueError("verticalAxis 不能为空")
         if not horizontalAxis:
@@ -197,7 +201,7 @@ class DataGenerate:
         # 将groupedDataFrame的数据保存为excel
         filename = f'groupedData, YAxis={verticalAxis}, XAxis={horizontalAxis}, Lines={seperatedLines}, Plots={seperatedPlots}'
         filename = filename.replace('[', '').replace(']', '')
-        groupedDataFrame.to_excel(f'{filename}.xlsx', index=False)
+        groupedDataFrame.to_excel(os.path.join(mergedFilePath,f'{filename}.xlsx'), index=False)
 
         
         print("数据已按照指定列进行分组，multiIndex已展开为单独的列，并保存为Excel文件。")
