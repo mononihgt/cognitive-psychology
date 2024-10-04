@@ -183,10 +183,13 @@ class DataGenerate:
         seperatedLines = to_list(seperatedLines)
         seperatedPlots = to_list(seperatedPlots)
         groupedList = seperatedPlots + seperatedLines + horizontalAxis
-        groupedList = subNameCol+[item for item in groupedList if item]
+        groupedList = [subNameCol]+[item for item in groupedList if item]
         
         # 按照groupedList中的顺序，将dataFrame中的verticalAxis进行group
-        groupedDataFrame = self.dataFrame.groupby(groupedList)[verticalAxis].mean().reset_index()
+        groupedDataFrame = self.dataFrame.groupby(groupedList).agg(
+            **{verticalAxis: (verticalAxis, 'mean')},
+            N=(verticalAxis, 'size')
+        ).reset_index()
         
         # 将multiIndex的元素保存为不同的列，而不是元组保存为excel中的一个单元
         groupedDataFrame.columns = groupedDataFrame.columns.map(lambda x: '_'.join(x) if isinstance(x, tuple) else x)
@@ -195,6 +198,7 @@ class DataGenerate:
         filename = f'groupedData, YAxis={verticalAxis}, XAxis={horizontalAxis}, Lines={seperatedLines}, Plots={seperatedPlots}'
         filename = filename.replace('[', '').replace(']', '')
         groupedDataFrame.to_excel(f'{filename}.xlsx', index=False)
+
         
         print("数据已按照指定列进行分组，multiIndex已展开为单独的列，并保存为Excel文件。")
         return groupedDataFrame
